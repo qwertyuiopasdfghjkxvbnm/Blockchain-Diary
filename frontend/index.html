@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Blockchain Diary</title>
+    <script src="https://cdn.jsdelivr.net/npm/web3@1.6.1/dist/web3.min.js"></script>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        text-align: center;
+        margin: 50px;
+      }
+      input,
+      textarea,
+      button {
+        padding: 10px;
+        margin: 10px;
+        width: 80%;
+        max-width: 400px;
+      }
+      #entries {
+        margin-top: 20px;
+        text-align: left;
+      }
+      .entry {
+        margin-bottom: 10px;
+        padding: 10px;
+        border: 1px solid #ccc;
+        border-radius: 5px;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>Blockchain Diary</h1>
+    <div>
+      <button id="connectButton">Connect MetaMask</button>
+      <p id="account"></p>
+    </div>
+
+    <h3>Add a New Diary Entry</h3>
+    <textarea
+      id="entryText"
+      rows="4"
+      placeholder="Write your diary entry..."
+    ></textarea
+    ><br />
+    <button id="addEntryButton">Add Entry</button>
+
+    <h3>Your Diary Entries</h3>
+    <div id="entries"></div>
+
+    <script>
+      let web3;
+      let contract;
+      let account;
+
+      // Contract ABI and Address (replace with your contract's ABI and deployed address)
+      const contractABI = [
+        {
+          anonymous: false,
+          inputs: [
+            {
+              indexed: true,
+              internalType: "address",
+              name: "user",
+              type: "address",
+            },
+            {
+              indexed: false,
+              internalType: "uint256",
+              name: "entryId",
+              type: "uint256",
+            },
+            {
+              indexed: false,
+              internalType: "string",
+              name: "entry",
+              type: "string",
+            },
+          ],
+          name: "DiaryEntryAdded",
+          type: "event",
+        },
+        {
+          inputs: [
+            {
+              internalType: "string",
+              name: "entry",
+              type: "string",
+            },
+          ],
+          name: "addDiaryEntry",
+          outputs: [],
+          stateMutability: "nonpayable",
+          type: "function",
+        },
+        {
+          inputs: [
+            {
+              internalType: "uint256",
+              name: "entryId",
+              type: "uint256",
+            },
+          ],
+          name: "getDiaryEntry",
+          outputs: [
+            {
+              internalType: "string",
+              name: "",
+              type: "string",
+            },
+          ],
+          stateMutability: "view",
+          type: "function",
+        },
+        {
+          inputs: [],
+          name: "getDiaryEntryCount",
+          outputs: [
+            {
+              internalType: "uint256",
+              name: "",
+              type: "uint256",
+            },
+          ],
+          stateMutability: "view",
+          type: "function",
+        },
+      ];
+      const contractAddress = "0x95050AE160ac239FAEe4dF9Fcd62A75b9caBAe5E"; // Replace with your contract's deployed address
+
+      // Initialize Web3 and contract
+      window.addEventListener("load", async () => {
+        if (window.ethereum) {
+          web3 = new Web3(window.ethereum);
+          try {
+            await ethereum.request({ method: "eth_requestAccounts" });
+            account = (await web3.eth.getAccounts())[0];
+            document.getElementById(
+              "account"
+            ).innerText = `Connected Account: ${account}`;
+            contract = new web3.eth.Contract(contractABI, contractAddress);
+            loadEntries();
+          } catch (error) {
+            console.error("Error connecting MetaMask:", error);
+          }
+        } else {
+          alert("Please install MetaMask to use this feature.");
+        }
+      });
+
+      // Add a new diary entry
+      document
+        .getElementById("addEntryButton")
+        .addEventListener("click", async () => {
+          const entry = document.getElementById("entryText").value;
+          if (!entry) {
+            alert("Please write something in your diary!");
+            return;
+          }
+          try {
+            await contract.methods.addDiaryEntry(entry).send({ from: account });
+            document.getElementById("entryText").value = ""; // Clear input
+            loadEntries(); // Reload entries
+          } catch (error) {
+            console.error("Error adding entry:", error);
+          }
+   
